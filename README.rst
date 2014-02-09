@@ -34,14 +34,39 @@ timeout context manager nesting.
 Developed and tested with CPython 2.6, 2.7 and 3.3 on MacOSX. Should work on
 any OS (xBSD, Linux, Windows).
 
+Installation
+============
+
+Using ``stopit`` in your application
+------------------------------------
+
+Both work identically::
+
+  easy_install stopit
+  pip install stopit
+
+Developing ``stopit``
+---------------------
+
+::
+
+  git clone https://github.com/glenfant/stopit.git
+  cd stopit
+  python setup.py develop
+
+  # Does it work for you ?
+  python setup.py test
+
 Credits
 =======
 
-This is a NIH package which is mainly a theft of `Gabriel Ahtune's recipe
-<http://gahtune.blogspot.fr/2013/08/a-timeout-context-manager.html>`_ with
-tests, minor improvements and refactorings, documentation and setuptools
-awareness I made since I'm somehow tired to copy/paste this recipe among
-projects that need timeout control.
+ -This is a NIH package which is mainly a theft of `Gabriel Ahtune's recipe
+  <http://gahtune.blogspot.fr/2013/08/a-timeout-context-manager.html>`_ with
+  tests, minor improvements and refactorings, documentation and setuptools
+  awareness I made since I'm somehow tired to copy/paste this recipe among
+  projects that need timeout control.
+
+- `Gilles Lenfant <gilles.lenfant@gmail.com>`_
 
 Caveats and issues
 ==================
@@ -260,4 +285,11 @@ It works on instance methods too::
 Links
 =====
 
-Home and tracker @ Github
+Source code (clone, fork, ...)
+  https://github.com/glenfant/stopit
+
+Issues tracker
+  https://github.com/glenfant/stopit/issues
+
+PyPI
+  https://pypi.python.org/pypi/stopit
