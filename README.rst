@@ -85,6 +85,8 @@ Improvements: set/release a lock where appropriate (timeout may occur when
 Tests and demos
 ===============
 
+::
+
   >>> from stopit import async_raise, TimeoutException, Timeout, timeoutable
   >>> import threading
 
