@@ -60,7 +60,7 @@ Developing ``stopit``
 Credits
 =======
 
- -This is a NIH package which is mainly a theft of `Gabriel Ahtune's recipe
+- This is a NIH package which is mainly a theft of `Gabriel Ahtune's recipe
   <http://gahtune.blogspot.fr/2013/08/a-timeout-context-manager.html>`_ with
   tests, minor improvements and refactorings, documentation and setuptools
   awareness I made since I'm somehow tired to copy/paste this recipe among
