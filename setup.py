@@ -11,7 +11,7 @@ or callables with a context manager or a decorator.
 from setuptools import setup
 import os
 
-version = '1.0.0'
+version = '1.0.0-dev'
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
 
