@@ -4,3 +4,4 @@ dist/
 *.pyc
 *.pyo
 *.egg-info
+__pycache__/
