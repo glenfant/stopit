@@ -40,7 +40,9 @@ Installation
 Using ``stopit`` in your application
 ------------------------------------
 
-Both work identically::
+Both work identically:
+
+.. code:: sh
 
   easy_install stopit
   pip install stopit
@@ -48,7 +50,7 @@ Both work identically::
 Developing ``stopit``
 ---------------------
 
-::
+.. code:: sh
 
   git clone https://github.com/glenfant/stopit.git
   cd stopit
@@ -85,7 +87,7 @@ Improvements: set/release a lock where appropriate (timeout may occur when
 Tests and demos
 ===============
 
-::
+.. code:: pycon
 
   >>> import threading
   >>> from stopit import async_raise, TimeoutException
@@ -98,7 +100,9 @@ Or the POSIX signal based resources ::
 
   >>> from stopit import SignalingTimeout as Timeout, signaling_timeoutable as timeoutable  #doctest: +SKIP
 
-Let's define some utilities ::
+Let's define some utilities:
+
+.. code:: pycon
 
   >>> import time
   >>> def fast_func():
@@ -125,7 +129,9 @@ Let's define some utilities ::
 ``async_raise`` function raises an exception in another thread
 --------------------------------------------------------------
 
-Testing ``async_raise()`` with a thread of 5 seconds ::
+Testing ``async_raise()`` with a thread of 5 seconds:
+
+.. code:: pycon
 
   >>> five_seconds_threads = threading.Thread(
   ...     target=variable_duration_func_handling_exc, args=(5.0, exc_traces))
@@ -135,17 +141,23 @@ Testing ``async_raise()`` with a thread of 5 seconds ::
   >>> five_seconds_threads.is_alive()
   True
 
-We raise a LookupError in that thread ::
+We raise a ``LookupError`` in that thread:
+
+.. code:: pycon
 
   >>> async_raise(thread_ident, LookupError)
 
 Okay but we must wait few milliseconds the thread death since the exception is
-asynchronous ::
+asynchronous:
+
+.. code:: pycon
 
   >>> while five_seconds_threads.is_alive():
   ...     pass
 
-And we can notice that we stopped the thread before it stopped by itself ::
+And we can notice that we stopped the thread before it stopped by itself:
+
+.. code:: pycon
 
   >>> time.time() - start_time < 0.5
   True
@@ -165,7 +177,9 @@ block.
 Swallowing Timeout exceptions
 .............................
 
-We check that the fast functions return as outside our context manager ::
+We check that the fast functions return as outside our context manager:
+
+.. code:: pycon
 
   >>> with Timeout(5.0) as timeout_ctx:
   ...     result = fast_func()
@@ -174,7 +188,9 @@ We check that the fast functions return as outside our context manager ::
   >>> timeout_ctx.state == timeout_ctx.EXECUTED
   True
 
-We check that slow functions are interrupted ::
+We check that slow functions are interrupted:
+
+.. code:: pycon
 
   >>> start_time = time.time()
   >>> with Timeout(2.0) as timeout_ctx:
@@ -184,7 +200,9 @@ We check that slow functions are interrupted ::
   >>> timeout_ctx.state == timeout_ctx.TIMED_OUT
   True
 
-Other exceptions are propagated and must be treated as usual ::
+Other exceptions are propagated and must be treated as usual:
+
+.. code:: pycon
 
   >>> try:
   ...     with Timeout(5.0) as timeout_ctx:
@@ -200,7 +218,9 @@ Propagating ``TimeoutException``
 ................................
 
 We can choose to propagate the ``TimeoutException`` too. Potential exceptions
-have to be handled ::
+have to be handled:
+
+.. code:: pycon
 
   >>> result = None
   >>> start_time = time.time()
@@ -216,7 +236,9 @@ have to be handled ::
   >>> timeout_ctx.state == timeout_ctx.TIMED_OUT
   True
 
-Other exceptions must be handled too ::
+Other exceptions must be handled too:
+
+.. code:: pycon
 
   >>> result = None
   >>> start_time = time.time()
@@ -239,7 +261,9 @@ This decorator stops the execution of any callable that should not last a
 certain amount of time.
 
 You may use a decorated callable without timeout control if you don't provide
-the ``timeout`` optionl argument::
+the ``timeout`` optional argument:
+
+.. code:: pycon
 
   >>> @timeoutable()
   ... def fast_double(value):
@@ -248,7 +272,9 @@ the ``timeout`` optionl argument::
   6
 
 You may specify that timeout with the ``timeout`` optional argument.
-Interrupted callables return None::
+Interrupted callables return None:
+
+.. code:: pycon
 
   >>> @timeoutable()
   ... def infinite():
@@ -258,7 +284,9 @@ Interrupted callables return None::
   >>> infinite(timeout=1) is None
   True
 
-Or any other value provided to the ``timeoutable`` decorator parameter::
+Or any other value provided to the ``timeoutable`` decorator parameter:
+
+.. code:: pycon
 
   >>> @timeoutable('unexpected')
   ... def infinite():
@@ -269,7 +297,9 @@ Or any other value provided to the ``timeoutable`` decorator parameter::
   'unexpected'
 
 If the ``timeout`` parameter name may clash with your callable signature, you
-may change it using ``timeout_param``::
+may change it using ``timeout_param``:
+
+.. code:: pycon
 
   >>> @timeoutable('unexpected', timeout_param='my_timeout')
   ... def infinite():
@@ -279,7 +309,9 @@ may change it using ``timeout_param``::
   >>> infinite(my_timeout=1)
   'unexpected'
 
-It works on instance methods too::
+It works on instance methods too:
+
+.. code:: pycon
 
   >>> class Anything(object):
   ...     @timeoutable('unexpected')
