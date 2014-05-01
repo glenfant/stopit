@@ -87,8 +87,16 @@ Tests and demos
 
 ::
 
-  >>> from stopit import async_raise, TimeoutException, Timeout, timeoutable
   >>> import threading
+  >>> from stopit import async_raise, TimeoutException
+
+In a real application, you should either use threading based timeout resources ::
+
+  >>> from stopit import ThreadingTimeout as Timeout, threading_timeoutable as timeoutable  #doctest: +SKIP
+
+Or the POSIX signal based resources ::
+
+  >>> from stopit import SignalingTimeout as Timeout, signaling_timeoutable as timeoutable  #doctest: +SKIP
 
 Let's define some utilities ::
 

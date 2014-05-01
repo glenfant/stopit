@@ -8,10 +8,10 @@ Raise asynchronous exceptions in other thread, control the timeout of blocks
 or callables with a context manager or a decorator.
 """
 
-from setuptools import setup
+from setuptools import setup, find_packages
 import os
 
-version = '1.0.0'
+version = '1.1.0'
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
 
@@ -43,7 +43,8 @@ setup(name='stopit',
       author_email='gilles.lenfant@gmail.com',
       url='http://pypi.python.org/pypi/stopit',
       license='GPLv3',
-      py_modules=['stopit'],
+      packages=find_packages('src'),
+      package_dir = {'': 'src'},
       test_suite='tests.suite',
       zip_safe=False
       )
