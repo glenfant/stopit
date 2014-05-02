@@ -14,6 +14,8 @@ blocks or callables with two context managers and two decorators.
 
    Explications follow below...
 
+.. contents::
+
 Overview
 ========
 
@@ -297,8 +299,8 @@ Comparing thread based and signal based timeout control
      - Don't care of it
 
    * - Thread safety
-     - **Yes** : Thread safe as long as each thread uses its own ``XxxTimeout`` context
-       manager or ``xxx_timeoutable`` decorator.
+     - **Yes** : Thread safe as long as each thread uses its own ``ThreadingTimeout``
+       context manager or ``threading_timeoutable`` decorator.
      - **Not** thread safe. Could yield unpredictable results in a
        multithreads application.
 
@@ -587,4 +589,4 @@ Credits
   projects that need timeout control.
 
 - `Gilles Lenfant <gilles.lenfant@gmail.com>`_: package creator and
-  `maintainer.
+  maintainer.
