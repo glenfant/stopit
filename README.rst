@@ -43,7 +43,9 @@ Installation
 Using ``stopit`` in your application
 ------------------------------------
 
-Both work identically::
+Both work identically:
+
+.. code-block:: bash
 
   easy_install stopit
   pip install stopit
@@ -51,8 +53,9 @@ Both work identically::
 Developing ``stopit``
 ---------------------
 
-::
+.. code-block:: bash
 
+  # You should prefer forking if you have a Github account
   git clone https://github.com/glenfant/stopit.git
   cd stopit
   python setup.py develop
@@ -324,6 +327,40 @@ Comparing thread based and signal based timeout control
      - Any Python 2.6, 2.7 or 3.3 with ``signal.SIGALRM`` support. This
        excludes Windows boxes
 
+
+Issue about timeout accuracy
+============================
+
+**Important**: the way CPython supports threading and asynchronous features has
+impacts on the accuracy of the timeout. In other words, if you assign a 2.0
+seconds timeout to a context managed block or a decorated callable, the
+effective code block / callable execution interruption may occur some
+fractions of seconds after this assigned timeout.
+
+For more background about this issue - that cannot be fixed - please read
+Python gurus thoughts about Python threading, the GIL and context switching
+like these ones:
+
+- http://pymotw.com/2/threading/
+- https://wiki.python.org/moin/GlobalInterpreterLock
+
+This is the reason why I am more "tolerant" on timeout accuracy in the tests
+you can read thereafter than I should be for a critical real-time application
+(that's not in the scope of Python).
+
+It is anyway possible to improve this accuracy at the expense of the global
+performances decreasing the check interval which defaults to 100. See:
+
+- https://docs.python.org/2.7/library/sys.html#sys.getcheckinterval
+- https://docs.python.org/2.7/library/sys.html#sys.getcheckinterval
+
+If this is a real issue for users (want a precise timeout and not an
+approximative one), a future release will add the optional ``check_interval``
+parameter to the context managers and decorators. This parameter will enable
+to lower temporarily the threads switching check interval, having a more
+accurate timeout at the expense of the overall performances while the context
+managed block or decorated functions are executing.
+
 Tests and demos
 ===============
 
@@ -439,7 +476,7 @@ We check that slow functions are interrupted:
    >>> start_time = time.time()
    >>> with Timeout(2.0) as timeout_ctx:
    ...     variable_duration_func(5.0)
-   >>> time.time() - start_time < 2.1
+   >>> time.time() - start_time < 2.2
    True
    >>> timeout_ctx.state == timeout_ctx.TIMED_OUT
    True
@@ -473,7 +510,7 @@ have to be handled:
    ...         variable_duration_func(5.0)
    ... except TimeoutException:
    ...     result = 'exception_seen'
-   >>> time.time() - start_time < 2.1
+   >>> time.time() - start_time < 2.2
    True
    >>> result
    'exception_seen'
