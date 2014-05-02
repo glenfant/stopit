@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-=====
-utils
-=====
+============
+stopit.utils
+============
 
 Misc utilities and common resources
 """
@@ -12,7 +12,8 @@ import logging
 import sys
 
 # Custom logger
-LOG = logging.getLogger(name=__name__)
+LOG = logging.getLogger(name='stopit')
+
 if sys.version_info < (2, 7):
     class NullHandler(logging.Handler):
         """Copied from Python 2.7 to avoid getting `No handlers could be found
@@ -40,6 +41,15 @@ class TimeoutException(Exception):
 
 
 class BaseTimeout(object):
+    """Context manager for limiting in the time the execution of a block
+
+    :param seconds: ``float`` or ``int`` duration enabled to run the context
+      manager block
+    :param swallow_exc: ``False`` if you want to manage the
+      ``TimeoutException`` (or any other) in an outer ``try ... except``
+      structure. ``True`` (default) if you just want to check the execution of
+      the block with the ``state`` attribute of the context manager.
+    """
     # Possible values for the ``state`` attribute, self explanative
     EXECUTED, EXECUTING, TIMED_OUT, INTERRUPTED, CANCELED = range(5)
 
@@ -49,7 +59,7 @@ class BaseTimeout(object):
         self.state = BaseTimeout.EXECUTED
 
     def __bool__(self):
-        return self.state in (BaseTimeout.EXECUTED, BaseTimeout.EXECUTING)
+        return self.state in (BaseTimeout.EXECUTED, BaseTimeout.EXECUTING, BaseTimeout.CANCELED)
 
     def __repr__(self):
         """Debug helper
@@ -66,6 +76,8 @@ class BaseTimeout(object):
             if self.state != BaseTimeout.TIMED_OUT:
                 self.state = BaseTimeout.INTERRUPTED
                 self.suppress_interrupt()
+            LOG.warning("Code block execution exceeded {0} seconds timeout".format(self.seconds),
+                        exc_info=(exc_type, exc_val, exc_tb))
             return self.swallow_exc
         else:
             if exc_type is None:
@@ -91,7 +103,7 @@ class BaseTimeout(object):
         raise NotImplementedError
 
 
-class base_timeoutable(object):
+class base_timeoutable(object):  # noqa
     """A base for function or method decorator that raises a ``TimeoutException`` to
     decorated functions that should not last a certain amount of time.
 
@@ -126,7 +138,7 @@ class base_timeoutable(object):
             timeout = kwargs.pop(self.timeout_param, None)
             if timeout:
                 with self.to_ctx_mgr(timeout, swallow_exc=True):
-                    result = self.default
+                    result = self.default  # noqa
                     # ``result`` may not be assigned below in case of timeout
                     result = func(*args, **kwargs)
                 return result

@@ -1,31 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-This recipe provides a context manager that stops the execution of its inner
-code block after the timeout is gone. This recipe is stolen with some changes
-and rewording in a less app centric vocabulary from the "rq" package.
+=================
+stopit.signalstop
+=================
 
-https://github.com/glenfant/rq/blob/master/rq/timeouts.py.
-
-Warnings:
-
-- This does not work with Windows that does not handle the signals we need.
-
-- This is not thead safe since the signal will get caught by a random thread.
-
-- Tested on MacOSX with Python 2.6, 2.7 and 3.3 (may or not work eslsewhere)
+Control the timeout of blocks or callables with a context manager or a
+decorator. Based on the use of signal.SIGALRM
 """
+
 import signal
 
 from .utils import TimeoutException, BaseTimeout, base_timeoutable
 
 
 class SignalTimeout(BaseTimeout):
+    """Context manager for limiting in the time the execution of a block
+    using signal.SIGALRM Unix signal.
+
+    See :class:`stopit.utils.BaseTimeout` for more information
+    """
     def __init__(self, seconds, swallow_exc=True):
-        """
-        :param timeout: seconds enabled for processing the block under
-          our context manager
-        :param swallow_exception: do not spread the exception on timeout
-        """
         seconds = int(seconds)  # alarm delay for signal MUST be int
         super(SignalTimeout, self).__init__(seconds, swallow_exc)
 
@@ -47,9 +41,8 @@ class SignalTimeout(BaseTimeout):
 class signal_timeoutable(base_timeoutable):  #noqa
     """A function or method decorator that raises a ``TimeoutException`` to
     decorated functions that should not last a certain amount of time.
-    this one uses ``ThreadingTimeout`` context manager.
+    this one uses ``SignalTimeout`` context manager.
 
     See :class:`.utils.base_timoutable`` class for further comments.
     """
     to_ctx_mgr = SignalTimeout
-

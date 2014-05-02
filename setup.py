@@ -8,8 +8,8 @@ Raise asynchronous exceptions in other thread, control the timeout of blocks
 or callables with a context manager or a decorator.
 """
 
-from setuptools import setup, find_packages
 import os
+from setuptools import setup, find_packages
 
 version = '1.1.0'
 
@@ -18,12 +18,12 @@ this_directory = os.path.abspath(os.path.dirname(__file__))
 def read(*names):
     return open(os.path.join(this_directory, *names), 'r').read().strip()
 
-long_description = read('README.rst')
+long_description = read('README.rst') + '\n\n' + read('CHANGES.rst')
 
 
 setup(name='stopit',
       version=version,
-      description="Timeout control decorator and context manager, raise exception in another thread",
+      description="Timeout control decorator and context managers, raise any exception in another thread",
       long_description=long_description,
       # FIXME: Add more classifiers from http://pypi.python.org/pypi?%3Aaction=list_classifiers
       classifiers=[

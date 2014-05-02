@@ -8,9 +8,10 @@ Public resources from ``stopit``
 """
 
 import pkg_resources
-from utils import LOG, TimeoutException
-from threadstop import ThreadingTimeout, async_raise, threading_timeoutable
-from signalstop import SignalTimeout, signal_timeoutable
+
+from .utils import LOG, TimeoutException
+from .threadstop import ThreadingTimeout, async_raise, threading_timeoutable
+from .signalstop import SignalTimeout, signal_timeoutable
 
 # PEP 396 style version marker
 try:
@@ -20,5 +21,6 @@ except:
     __version__ = 'unknown'
 
 __all__ = (
-    'ThreadingTimeout', 'async_raise', 'threading_timeoutable', 'SignalTimeout', 'signal_timeoutable'
+    'ThreadingTimeout', 'async_raise', 'threading_timeoutable',
+    'SignalTimeout', 'signal_timeoutable'
 )

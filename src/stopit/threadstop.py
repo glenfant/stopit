@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-======
-stopit
-======
+=================
+stopit.threadstop
+=================
 
 Raise asynchronous exceptions in other thread, control the timeout of blocks
 or callables with a context manager or a decorator.
@@ -36,15 +36,10 @@ def async_raise(target_tid, exception):
 
 class ThreadingTimeout(BaseTimeout):
     """Context manager for limiting in the time the execution of a block
+    using asynchronous threads launching exception.
 
-    :param seconds: ``float`` or ``int`` duration enabled to run the context
-      manager block
-    :param swallow_exc: ``False`` if you want to manage the
-      ``TimeoutException`` (or any other) in an outer ``try ... except``
-      structure. ``True`` (default) if you just want to check the execution of
-      the block with the ``state`` attribute of the context manager.
+    See :class:`stopit.utils.BaseTimeout` for more information
     """
-
     def __init__(self, seconds, swallow_exc=True):
         super(ThreadingTimeout, self).__init__(seconds, swallow_exc)
         self.target_tid = threading.current_thread().ident
@@ -57,6 +52,7 @@ class ThreadingTimeout(BaseTimeout):
         self.state = BaseTimeout.TIMED_OUT
         async_raise(self.target_tid, TimeoutException)
 
+    # Required overrides
     def setup_interrupt(self):
         """Setting up the resource that interrupts the block
         """
@@ -77,8 +73,3 @@ class threading_timeoutable(base_timeoutable):  #noqa
     See :class:`.utils.base_timoutable`` class for further comments.
     """
     to_ctx_mgr = ThreadingTimeout
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()

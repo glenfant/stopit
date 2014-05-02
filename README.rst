@@ -2,11 +2,17 @@
 stopit
 ======
 
-.. admonition:: About
+Raise asynchronous exceptions in other threads, control the timeout of
+blocks or callables with two context managers and two decorators.
 
-   Raise asynchronous exceptions in other thread, control the timeout of
-   blocks or callables with a context manager or a decorator.
+.. attention:: API Changes
 
+   Users of 1.0.0 should upgrade their source code:
+
+   - ``stopit.Timeout`` is renamed ``stopit.ThreadingTimeout``
+   - ``stopit.timeoutable`` is renamed ``stopit.threading_timeoutable``
+
+   Explications follow below...
 
 Overview
 ========
@@ -16,23 +22,18 @@ This module provides:
 - a function that raises an exception in another thread, including the main
   thread.
 
-- a context manager that may stop its inner block activity on timeout.
+- two context managers that may stop its inner block activity on timeout.
 
-- a decorator that may stop its decorated callables on timeout.
-
-There are several recipes that provide timeout related features. This one is
-**cross-platforms** and **thread safe**, but due to the GIL management, the
-timeout control is not as accurate as the one using signals (see below), and
-may wait the end of a long blocking Python atomic instruction to take effect.
-
-You may prefer an alternate solution that is based on signal handling that is
-more accurate and takes over the GIL considerations like `this one
-<https://gist.github.com/glenfant/7501911>`_ but with some limitations: (a) it
-is not thread safe, (b) works only on Unix based OS and (c) does not support
-timeout context manager nesting.
+- two decorators that may stop its decorated callables on timeout.
 
 Developed and tested with CPython 2.6, 2.7 and 3.3 on MacOSX. Should work on
-any OS (xBSD, Linux, Windows).
+any OS (xBSD, Linux, Windows) except when explicitly mentioned.
+
+.. note::
+
+   Signal based timeout controls, namely ``SignalTimeout`` context manager and
+   ``signal_timeoutable`` decorator won't work in Windows that has no support
+   for ``signal.SIGALRM``. Any help to work around this is welcome.
 
 Installation
 ============
@@ -57,102 +58,355 @@ Developing ``stopit``
   # Does it work for you ?
   python setup.py test
 
-Credits
-=======
+Public API
+==========
 
-- This is a NIH package which is mainly a theft of `Gabriel Ahtune's recipe
-  <http://gahtune.blogspot.fr/2013/08/a-timeout-context-manager.html>`_ with
-  tests, minor improvements and refactorings, documentation and setuptools
-  awareness I made since I'm somehow tired to copy/paste this recipe among
-  projects that need timeout control.
+Exception
+---------
 
-- `Gilles Lenfant <gilles.lenfant@gmail.com>`_
+``stopit.TimeoutException``
+...........................
 
-Caveats and issues
-==================
+A ``stopit.TimeoutException`` may be raised in a timeout context manager
+controlled block.
 
-Will not work with other Python implementations (Iron Python, Jython, Pypy,
-...) since we use CPython specific low level API.
+This exception may be propagated in your application at the end of execution
+of the context manager controlled block, see the ``swallow_ex`` parameter of
+the context managers.
 
-Will not stop the execution of blocking Python atomic instructions that
-acquire the GIL. In example, if the destination thread is actually executing a
-``time.sleep(20)``, the asynchronous exception is effective **after** its
-execution.
+Note that the ``stopit.TimeoutException`` is always swallowed after the
+execution of functions decorated with ``xxx_timeoutable(...)``. Anyway, you
+may catch this exception **within** the decorated function.
 
-Improvements: set/release a lock where appropriate (timeout may occur when
-``__exit__`` runs)
+Threading based resources
+-------------------------
+
+.. warning::
+
+   Threading based resources will only work with CPython implementations
+   since we use CPython specific low level API. This excludes Iron Python,
+   Jython, Pypy, ...
+
+   Will not stop the execution of blocking Python atomic instructions that
+   acquire the GIL. In example, if the destination thread is actually
+   executing a ``time.sleep(20)``, the asynchronous exception is effective
+   **after** its execution.
+
+``stopit.async_raise``
+......................
+
+A function that raises an arbitrary exception in another thread
+
+``async_raise(tid, exception)``
+
+- ``tid`` is the thread identifier as provided by the ``ident`` attribute of a
+  thread object. See the documentation of the ``threading`` module for further
+  information.
+
+- ``exception`` is the exception class or object to raise in the thread.
+
+``stopit.ThreadingTimeout``
+...........................
+
+A context manager that "kills" its inner block execution that exceeds the
+provided time.
+
+``ThreadingTimeout(seconds, swallow_exc=True)``
+
+- ``seconds`` is the number of seconds allowed to the execution of the context
+  managed block.
+
+- ``swallow_exc`` : if ``False``, the possible ``stopit.TimeoutException`` will
+  be re-raised when quitting the context managed block. **Attention**: a
+  ``True`` value does not swallow other potential exceptions.
+
+**Methods and attributes**
+
+of a ``stopit.ThreadingTimeout`` context manager.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Method / Attribute
+     - Description
+
+   * - ``.cancel()``
+     - Cancels the timeout control. This method is intended for use within the
+       block that's under timeout control, specifically to cancel the timeout
+       control. Means that all code executed after this call may be executed
+       till the end.
+
+   * - ``.status``
+     - This attribute indicated the actual status of the timeout control. It
+       may take the value of the ``EXECUTED``, ``EXECUTING``, ``TIMED_OUT``,
+       ``INTERRUPTED`` or ``CANCELED`` attributes. See below.
+
+   * - ``.EXECUTING``
+     - The timeout control is under execution. We are typically executing
+       within the code under control of the context manager.
+
+   * - ``.EXECUTED``
+     - Good news: the code under timeout control completed normally within the
+       assigned time frame.
+
+   * - ``.TIMED_OUT``
+     - Bad news: the code under timeout control has been sleeping too long.
+       The objects supposed to be created or changed within the timeout
+       controlled block should be considered as non existing or corrupted.
+       Don't play with them otherwise informed.
+
+   * - ``.INTERRUPTED``
+     - The code under timeout control may itself raise explicit
+       ``stopit.TimeoutException`` for any application logic reason that may
+       occur. This intentional exit can be spotted from outside the timeout
+       controlled block with this status value.
+
+   * - ``.CANCELED``
+     - The timeout control has been intentionally canceled and the code
+       running under timeout control did complete normally. But perhaps after
+       the assigned time frame.
+
+
+A typical usage:
+
+.. code-block:: python
+
+   import stopit
+   # ...
+   with stopit.ThreadingTimeout(10) as to_ctx_mgr:
+       assert to_ctx_mgr.status == to_ctx_mgr.EXECUTING
+       # Something potentially very long but which
+       # ...
+
+   # OK, let's check what happened
+   if to_ctx_mrg.status == to_ctx_mrg.EXECUTED:
+       # All's fine, everything was executed within 10 seconds
+   elif to_ctx_mrg.status == to_ctx_mrg.EXECUTING:
+       # Hmm, that's not possible outside the block
+   elif to_ctx_mrg.status == to_ctx_mrg.TIMED_OUT:
+       # Eeek the 10 seconds timeout occurred while executing the block
+   elif to_ctx_mrg.status == to_ctx_mrg.INTERRUPTED:
+       # Oh you raised specifically the TimeoutException in the block
+   elif to_ctx_mrg.status == to_ctx_mrg.CANCELED:
+       # Oh you called to_ctx_mgr.cancel() method within the block but it
+       # executed till the end
+   else:
+       # That's not possible
+
+Notice that the context manager object may be considered as a boolean
+indicating (if ``True``) that the block executed normally:
+
+.. code-block:: python
+
+   if to_ctx_mgr:
+       # Yes, the code under timeout control completed
+       # Objects it created or changed may be considered consistent
+
+``stopit.threading_timeoutable``
+................................
+
+A decorator that kills the function or method it decorates, if it does not
+return within a given time frame.
+
+``stopit.threading_timeoutable([default [, timeout_param]])``
+
+- ``default`` is the value to be returned by the decorated function or method of
+  when its execution timed out, to notify the caller code that the function
+  did not complete within the assigned time frame.
+
+  If this parameter is not provided, the decorated function or method will
+  return a ``None`` value when its execution times out.
+
+  .. code-block:: python
+
+     @stopit.threading_timeoutable(default='not finished')
+     def infinite_loop():
+         # As its name says...
+
+     result = infinite_loop(timeout=5)
+     assert result == 'not finished'
+
+- ``timeout_param``: The function or method you have decorated may require a
+  ``timeout`` named parameter for whatever reason. This empowers you to change
+  the name of the ``timeout`` parameter in the decorated function signature to
+  whatever suits, and prevent a potential naming conflict.
+
+  .. code-block:: python
+
+     @stopit.threading_timeoutable(timeout_param='my_timeout')
+     def some_slow_function(a, b, timeout='whatever'):
+         # As its name says...
+
+     result = some_slow_function(1, 2, timeout="something", my_timeout=2)
+
+
+About the decorated function
+............................
+
+or method...
+
+As you noticed above, you just need to add the ``timeout`` parameter when
+calling the function or method. Or whatever other name for this you chose with
+the ``timeout_param`` of the decorator. When calling the real inner function
+or method, this parameter is removed.
+
+
+Signaling based resources
+-------------------------
+
+.. warning::
+
+   Using signaling based resources will **not** work under Windows or any OS
+   that's not based on Unix.
+
+``stopit.SignalTimeout`` and ``stopit.signal_timeoutable`` have exactly the
+same API as their respective threading based resources, namely
+`stopit.ThreadingTimeout`_ and `stopit.threading_timeoutable`_.
+
+See the `comparison chart`_ that warns on the more or less subtle differences
+between the `Threading based resources`_ and the `Signaling based resources`_.
+
+Logging
+-------
+
+The ``stopit`` named logger emits a warning each time a block of code
+execution exceeds the associated timeout. To turn logging off, just:
+
+.. code-block:: python
+
+   import logging
+   stopit_logger = logging.getLogger('stopit')
+   stopit_logger.seLevel(logging.ERROR)
+
+.. _comparison chart:
+
+Comparing thread based and signal based timeout control
+-------------------------------------------------------
+
+.. list-table::
+   :header-rows: 1
+
+   * - Feature
+     - Threading based resources
+     - Signaling based resources
+
+   * - GIL
+     - Can't interrupt a long Python atomic instruction. e.g. if
+       ``time.sleep(20.0)`` is actually executing, the timeout will take
+       effect at the end of the execution of this line.
+     - Don't care of it
+
+   * - Thread safety
+     - **Yes** : Thread safe as long as each thread uses its own ``XxxTimeout`` context
+       manager or ``xxx_timeoutable`` decorator.
+     - **Not** thread safe. Could yield unpredictable results in a
+       multithreads application.
+
+   * - Nestable context managers
+     - **Yes** : you can nest threading based context managers
+     - **No** : never nest a signaling based context manager in another one.
+       The innermost context manager will automatically cancel the timeout
+       control of outer ones.
+
+   * - Accuracy
+     - Any positive floating value is accepted as timeout value. The accuracy
+       depends on the GIL interval checking of your platform. See the doc on
+       ``sys.getcheckinterval`` and ``sys.setcheckinterval`` for your Python
+       version.
+     - Due to the use of ``signal.SIGALRM``, we need provide an integer number
+       of seconds. So a timeout of ``0.6`` seconds will ve automatically
+       converted into a timeout of zero second!
+
+   * - Supported platforms
+     - Any CPython 2.6, 2.7 or 3.3 on any OS with threading support.
+     - Any Python 2.6, 2.7 or 3.3 with ``signal.SIGALRM`` support. This
+       excludes Windows boxes
 
 Tests and demos
 ===============
 
-::
+.. code-block:: pycon
 
-  >>> import threading
-  >>> from stopit import async_raise, TimeoutException
+   >>> import threading
+   >>> from stopit import async_raise, TimeoutException
 
-In a real application, you should either use threading based timeout resources ::
+In a real application, you should either use threading based timeout resources:
 
-  >>> from stopit import ThreadingTimeout as Timeout, threading_timeoutable as timeoutable  #doctest: +SKIP
+.. code-block:: pycon
 
-Or the POSIX signal based resources ::
+   >>> from stopit import ThreadingTimeout as Timeout, threading_timeoutable as timeoutable  #doctest: +SKIP
 
-  >>> from stopit import SignalingTimeout as Timeout, signaling_timeoutable as timeoutable  #doctest: +SKIP
+Or the POSIX signal based resources:
 
-Let's define some utilities ::
+.. code-block:: pycon
 
-  >>> import time
-  >>> def fast_func():
-  ...     return 0
-  >>> def variable_duration_func(duration):
-  ...     t0 = time.time()
-  ...     while True:
-  ...         dummy = 0
-  ...         if time.time() - t0 > duration:
-  ...             break
-  >>> exc_traces = []
-  >>> def variable_duration_func_handling_exc(duration, exc_traces):
-  ...     try:
-  ...         t0 = time.time()
-  ...         while True:
-  ...             dummy = 0
-  ...             if time.time() - t0 > duration:
-  ...                 break
-  ...     except Exception as exc:
-  ...         exc_traces.append(exc)
-  >>> def func_with_exception():
-  ...     raise LookupError()
+   >>> from stopit import SignalingTimeout as Timeout, signaling_timeoutable as timeoutable  #doctest: +SKIP
+
+Let's define some utilities:
+
+.. code-block:: pycon
+
+   >>> import time
+   >>> def fast_func():
+   ...     return 0
+   >>> def variable_duration_func(duration):
+   ...     t0 = time.time()
+   ...     while True:
+   ...         dummy = 0
+   ...         if time.time() - t0 > duration:
+   ...             break
+   >>> exc_traces = []
+   >>> def variable_duration_func_handling_exc(duration, exc_traces):
+   ...     try:
+   ...         t0 = time.time()
+   ...         while True:
+   ...             dummy = 0
+   ...             if time.time() - t0 > duration:
+   ...                 break
+   ...     except Exception as exc:
+   ...         exc_traces.append(exc)
+   >>> def func_with_exception():
+   ...     raise LookupError()
 
 ``async_raise`` function raises an exception in another thread
 --------------------------------------------------------------
 
-Testing ``async_raise()`` with a thread of 5 seconds ::
+Testing ``async_raise()`` with a thread of 5 seconds:
 
-  >>> five_seconds_threads = threading.Thread(
-  ...     target=variable_duration_func_handling_exc, args=(5.0, exc_traces))
-  >>> start_time = time.time()
-  >>> five_seconds_threads.start()
-  >>> thread_ident = five_seconds_threads.ident
-  >>> five_seconds_threads.is_alive()
-  True
+.. code-block:: pycon
 
-We raise a LookupError in that thread ::
+   >>> five_seconds_threads = threading.Thread(
+   ...     target=variable_duration_func_handling_exc, args=(5.0, exc_traces))
+   >>> start_time = time.time()
+   >>> five_seconds_threads.start()
+   >>> thread_ident = five_seconds_threads.ident
+   >>> five_seconds_threads.is_alive()
+   True
 
-  >>> async_raise(thread_ident, LookupError)
+We raise a LookupError in that thread:
+
+.. code-block:: pycon
+
+   >>> async_raise(thread_ident, LookupError)
 
 Okay but we must wait few milliseconds the thread death since the exception is
-asynchronous ::
+asynchronous:
 
-  >>> while five_seconds_threads.is_alive():
-  ...     pass
+.. code-block:: pycon
 
-And we can notice that we stopped the thread before it stopped by itself ::
+   >>> while five_seconds_threads.is_alive():
+   ...     pass
 
-  >>> time.time() - start_time < 0.5
-  True
-  >>> len(exc_traces)
-  1
-  >>> exc_traces[-1].__class__.__name__
-  'LookupError'
+And we can notice that we stopped the thread before it stopped by itself:
+
+.. code-block:: pycon
+
+   >>> time.time() - start_time < 0.5
+   True
+   >>> len(exc_traces)
+   1
+   >>> exc_traces[-1].__class__.__name__
+   'LookupError'
 
 ``Timeout`` context manager
 ---------------------------
@@ -165,72 +419,82 @@ block.
 Swallowing Timeout exceptions
 .............................
 
-We check that the fast functions return as outside our context manager ::
+We check that the fast functions return as outside our context manager:
 
-  >>> with Timeout(5.0) as timeout_ctx:
-  ...     result = fast_func()
-  >>> result
-  0
-  >>> timeout_ctx.state == timeout_ctx.EXECUTED
-  True
+.. code-block:: pycon
 
-We check that slow functions are interrupted ::
+   >>> with Timeout(5.0) as timeout_ctx:
+   ...     result = fast_func()
+   >>> result
+   0
+   >>> timeout_ctx.state == timeout_ctx.EXECUTED
+   True
 
-  >>> start_time = time.time()
-  >>> with Timeout(2.0) as timeout_ctx:
-  ...     variable_duration_func(5.0)
-  >>> time.time() - start_time < 2.1
-  True
-  >>> timeout_ctx.state == timeout_ctx.TIMED_OUT
-  True
+We check that slow functions are interrupted:
 
-Other exceptions are propagated and must be treated as usual ::
+.. code-block:: pycon
 
-  >>> try:
-  ...     with Timeout(5.0) as timeout_ctx:
-  ...         result = func_with_exception()
-  ... except LookupError:
-  ...     result = 'exception_seen'
-  >>> timeout_ctx.state == timeout_ctx.EXECUTING
-  True
-  >>> result
-  'exception_seen'
+   >>> start_time = time.time()
+   >>> with Timeout(2.0) as timeout_ctx:
+   ...     variable_duration_func(5.0)
+   >>> time.time() - start_time < 2.1
+   True
+   >>> timeout_ctx.state == timeout_ctx.TIMED_OUT
+   True
+
+Other exceptions are propagated and must be treated as usual:
+
+.. code-block:: pycon
+
+   >>> try:
+   ...     with Timeout(5.0) as timeout_ctx:
+   ...         result = func_with_exception()
+   ... except LookupError:
+   ...     result = 'exception_seen'
+   >>> timeout_ctx.state == timeout_ctx.EXECUTING
+   True
+   >>> result
+   'exception_seen'
 
 Propagating ``TimeoutException``
 ................................
 
 We can choose to propagate the ``TimeoutException`` too. Potential exceptions
-have to be handled ::
+have to be handled:
 
-  >>> result = None
-  >>> start_time = time.time()
-  >>> try:
-  ...     with Timeout(2.0, swallow_exc=False) as timeout_ctx:
-  ...         variable_duration_func(5.0)
-  ... except TimeoutException:
-  ...     result = 'exception_seen'
-  >>> time.time() - start_time < 2.1
-  True
-  >>> result
-  'exception_seen'
-  >>> timeout_ctx.state == timeout_ctx.TIMED_OUT
-  True
+.. code-block:: pycon
 
-Other exceptions must be handled too ::
+   >>> result = None
+   >>> start_time = time.time()
+   >>> try:
+   ...     with Timeout(2.0, swallow_exc=False) as timeout_ctx:
+   ...         variable_duration_func(5.0)
+   ... except TimeoutException:
+   ...     result = 'exception_seen'
+   >>> time.time() - start_time < 2.1
+   True
+   >>> result
+   'exception_seen'
+   >>> timeout_ctx.state == timeout_ctx.TIMED_OUT
+   True
 
-  >>> result = None
-  >>> start_time = time.time()
-  >>> try:
-  ...     with Timeout(2.0, swallow_exc=False) as timeout_ctx:
-  ...         func_with_exception()
-  ... except Exception:
-  ...     result = 'exception_seen'
-  >>> time.time() - start_time < 0.1
-  True
-  >>> result
-  'exception_seen'
-  >>> timeout_ctx.state == timeout_ctx.EXECUTING
-  True
+Other exceptions must be handled too:
+
+.. code-block:: pycon
+
+   >>> result = None
+   >>> start_time = time.time()
+   >>> try:
+   ...     with Timeout(2.0, swallow_exc=False) as timeout_ctx:
+   ...         func_with_exception()
+   ... except Exception:
+   ...     result = 'exception_seen'
+   >>> time.time() - start_time < 0.1
+   True
+   >>> result
+   'exception_seen'
+   >>> timeout_ctx.state == timeout_ctx.EXECUTING
+   True
 
 ``timeoutable`` callable decorator
 ----------------------------------
@@ -239,58 +503,67 @@ This decorator stops the execution of any callable that should not last a
 certain amount of time.
 
 You may use a decorated callable without timeout control if you don't provide
-the ``timeout`` optionl argument::
+the ``timeout`` optional argument:
 
-  >>> @timeoutable()
-  ... def fast_double(value):
-  ...     return value * 2
-  >>> fast_double(3)
-  6
+.. code-block:: pycon
+
+   >>> @timeoutable()
+   ... def fast_double(value):
+   ...     return value * 2
+   >>> fast_double(3)
+   6
 
 You may specify that timeout with the ``timeout`` optional argument.
-Interrupted callables return None::
+Interrupted callables return None:
 
-  >>> @timeoutable()
-  ... def infinite():
-  ...     while True:
-  ...         pass
-  ...     return 'whatever'
-  >>> infinite(timeout=1) is None
-  True
+.. code-block:: pycon
 
-Or any other value provided to the ``timeoutable`` decorator parameter::
+   >>> @timeoutable()
+   ... def infinite():
+   ...     while True:
+   ...         pass
+   ...     return 'whatever'
+   >>> infinite(timeout=1) is None
+   True
 
-  >>> @timeoutable('unexpected')
-  ... def infinite():
-  ...     while True:
-  ...         pass
-  ...     return 'whatever'
-  >>> infinite(timeout=1)
-  'unexpected'
+Or any other value provided to the ``timeoutable`` decorator parameter:
+
+.. code-block:: pycon
+
+   >>> @timeoutable('unexpected')
+   ... def infinite():
+   ...     while True:
+   ...         pass
+   ...     return 'whatever'
+   >>> infinite(timeout=1)
+   'unexpected'
 
 If the ``timeout`` parameter name may clash with your callable signature, you
-may change it using ``timeout_param``::
+may change it using ``timeout_param``:
 
-  >>> @timeoutable('unexpected', timeout_param='my_timeout')
-  ... def infinite():
-  ...     while True:
-  ...         pass
-  ...     return 'whatever'
-  >>> infinite(my_timeout=1)
-  'unexpected'
+.. code-block:: pycon
 
-It works on instance methods too::
+   >>> @timeoutable('unexpected', timeout_param='my_timeout')
+   ... def infinite():
+   ...     while True:
+   ...         pass
+   ...     return 'whatever'
+   >>> infinite(my_timeout=1)
+   'unexpected'
 
-  >>> class Anything(object):
-  ...     @timeoutable('unexpected')
-  ...     def infinite(self, value):
-  ...         assert type(value) is int
-  ...         while True:
-  ...             pass
-  >>> obj = Anything()
-  >>> obj.infinite(2, timeout=1)
-  'unexpected'
+It works on instance methods too:
 
+.. code-block:: pycon
+
+   >>> class Anything(object):
+   ...     @timeoutable('unexpected')
+   ...     def infinite(self, value):
+   ...         assert type(value) is int
+   ...         while True:
+   ...             pass
+   >>> obj = Anything()
+   >>> obj.infinite(2, timeout=1)
+   'unexpected'
 
 Links
 =====
@@ -303,3 +576,15 @@ Issues tracker
 
 PyPI
   https://pypi.python.org/pypi/stopit
+
+Credits
+=======
+
+- This is a NIH package which is mainly a theft of `Gabriel Ahtune's recipe
+  <http://gahtune.blogspot.fr/2013/08/a-timeout-context-manager.html>`_ with
+  tests, minor improvements and refactorings, documentation and setuptools
+  awareness I made since I'm somehow tired to copy/paste this recipe among
+  projects that need timeout control.
+
+- `Gilles Lenfant <gilles.lenfant@gmail.com>`_: package creator and
+  `maintainer.
