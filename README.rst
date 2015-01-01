@@ -141,7 +141,7 @@ of a ``stopit.ThreadingTimeout`` context manager.
        control. Means that all code executed after this call may be executed
        till the end.
 
-   * - ``.status``
+   * - ``.state``
      - This attribute indicated the actual status of the timeout control. It
        may take the value of the ``EXECUTED``, ``EXECUTING``, ``TIMED_OUT``,
        ``INTERRUPTED`` or ``CANCELED`` attributes. See below.
@@ -164,7 +164,7 @@ of a ``stopit.ThreadingTimeout`` context manager.
      - The code under timeout control may itself raise explicit
        ``stopit.TimeoutException`` for any application logic reason that may
        occur. This intentional exit can be spotted from outside the timeout
-       controlled block with this status value.
+       controlled block with this state value.
 
    * - ``.CANCELED``
      - The timeout control has been intentionally canceled and the code
@@ -179,20 +179,20 @@ A typical usage:
    import stopit
    # ...
    with stopit.ThreadingTimeout(10) as to_ctx_mgr:
-       assert to_ctx_mgr.status == to_ctx_mgr.EXECUTING
+       assert to_ctx_mgr.state == to_ctx_mgr.EXECUTING
        # Something potentially very long but which
        # ...
 
    # OK, let's check what happened
-   if to_ctx_mrg.status == to_ctx_mrg.EXECUTED:
+   if to_ctx_mrg.state == to_ctx_mrg.EXECUTED:
        # All's fine, everything was executed within 10 seconds
-   elif to_ctx_mrg.status == to_ctx_mrg.EXECUTING:
+   elif to_ctx_mrg.state == to_ctx_mrg.EXECUTING:
        # Hmm, that's not possible outside the block
-   elif to_ctx_mrg.status == to_ctx_mrg.TIMED_OUT:
+   elif to_ctx_mrg.state == to_ctx_mrg.TIMED_OUT:
        # Eeek the 10 seconds timeout occurred while executing the block
-   elif to_ctx_mrg.status == to_ctx_mrg.INTERRUPTED:
+   elif to_ctx_mrg.state == to_ctx_mrg.INTERRUPTED:
        # Oh you raised specifically the TimeoutException in the block
-   elif to_ctx_mrg.status == to_ctx_mrg.CANCELED:
+   elif to_ctx_mrg.state == to_ctx_mrg.CANCELED:
        # Oh you called to_ctx_mgr.cancel() method within the block but it
        # executed till the end
    else:
