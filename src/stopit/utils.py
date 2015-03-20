@@ -61,6 +61,8 @@ class BaseTimeout(object):
     def __bool__(self):
         return self.state in (BaseTimeout.EXECUTED, BaseTimeout.EXECUTING, BaseTimeout.CANCELED)
 
+    __nonzero__ = __bool__  # Python 2.x
+
     def __repr__(self):
         """Debug helper
         """

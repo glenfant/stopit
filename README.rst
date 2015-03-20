@@ -469,6 +469,14 @@ We check that the fast functions return as outside our context manager:
    >>> timeout_ctx.state == timeout_ctx.EXECUTED
    True
 
+And the context manager is considered as ``True`` (the block executed its last
+line):
+
+.. code:: pycon
+
+   >>> bool(timeout_ctx)
+   True
+
 We check that slow functions are interrupted:
 
 .. code-block:: pycon
@@ -480,6 +488,13 @@ We check that slow functions are interrupted:
    True
    >>> timeout_ctx.state == timeout_ctx.TIMED_OUT
    True
+
+And the context manager is considered as ``False`` since the block did timeout.
+
+.. code:: pycon
+
+   >>> bool(timeout_ctx)
+   False
 
 Other exceptions are propagated and must be treated as usual:
 

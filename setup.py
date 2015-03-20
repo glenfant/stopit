@@ -11,7 +11,7 @@ or callables with a context manager or a decorator.
 import os
 from setuptools import setup, find_packages
 
-version = '1.1.0'
+version = '1.1.1'
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
 
@@ -33,6 +33,7 @@ setup(name='stopit',
           "Programming Language :: Python :: 2.6",
           "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.3",
+          "Programming Language :: Python :: 3.4",
           "Operating System :: OS Independent",
           "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
           "Intended Audience :: Developers",
