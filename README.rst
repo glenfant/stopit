@@ -28,8 +28,8 @@ This module provides:
 
 - two decorators that may stop its decorated callables on timeout.
 
-Developed and tested with CPython 2.6, 2.7 and 3.3 on MacOSX. Should work on
-any OS (xBSD, Linux, Windows) except when explicitly mentioned.
+Developed and tested with CPython 2.6, 2.7, 3.3 and 3.4 on MacOSX. Should work
+on any OS (xBSD, Linux, Windows) except when explicitly mentioned.
 
 .. note::
 
@@ -45,7 +45,7 @@ Using ``stopit`` in your application
 
 Both work identically:
 
-.. code-block:: bash
+.. code:: bash
 
   easy_install stopit
   pip install stopit
@@ -53,7 +53,7 @@ Both work identically:
 Developing ``stopit``
 ---------------------
 
-.. code-block:: bash
+.. code:: bash
 
   # You should prefer forking if you have a Github account
   git clone https://github.com/glenfant/stopit.git
@@ -174,7 +174,7 @@ of a ``stopit.ThreadingTimeout`` context manager.
 
 A typical usage:
 
-.. code-block:: python
+.. code:: python
 
    import stopit
    # ...
@@ -201,7 +201,7 @@ A typical usage:
 Notice that the context manager object may be considered as a boolean
 indicating (if ``True``) that the block executed normally:
 
-.. code-block:: python
+.. code:: python
 
    if to_ctx_mgr:
        # Yes, the code under timeout control completed
@@ -222,7 +222,7 @@ return within a given time frame.
   If this parameter is not provided, the decorated function or method will
   return a ``None`` value when its execution times out.
 
-  .. code-block:: python
+  .. code:: python
 
      @stopit.threading_timeoutable(default='not finished')
      def infinite_loop():
@@ -236,7 +236,7 @@ return within a given time frame.
   the name of the ``timeout`` parameter in the decorated function signature to
   whatever suits, and prevent a potential naming conflict.
 
-  .. code-block:: python
+  .. code:: python
 
      @stopit.threading_timeoutable(timeout_param='my_timeout')
      def some_slow_function(a, b, timeout='whatever'):
@@ -277,7 +277,7 @@ Logging
 The ``stopit`` named logger emits a warning each time a block of code
 execution exceeds the associated timeout. To turn logging off, just:
 
-.. code-block:: python
+.. code:: python
 
    import logging
    stopit_logger = logging.getLogger('stopit')
@@ -364,26 +364,26 @@ managed block or decorated functions are executing.
 Tests and demos
 ===============
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> import threading
    >>> from stopit import async_raise, TimeoutException
 
 In a real application, you should either use threading based timeout resources:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> from stopit import ThreadingTimeout as Timeout, threading_timeoutable as timeoutable  #doctest: +SKIP
 
 Or the POSIX signal based resources:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> from stopit import SignalingTimeout as Timeout, signaling_timeoutable as timeoutable  #doctest: +SKIP
 
 Let's define some utilities:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> import time
    >>> def fast_func():
@@ -412,7 +412,7 @@ Let's define some utilities:
 
 Testing ``async_raise()`` with a thread of 5 seconds:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> five_seconds_threads = threading.Thread(
    ...     target=variable_duration_func_handling_exc, args=(5.0, exc_traces))
@@ -424,21 +424,21 @@ Testing ``async_raise()`` with a thread of 5 seconds:
 
 We raise a LookupError in that thread:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> async_raise(thread_ident, LookupError)
 
 Okay but we must wait few milliseconds the thread death since the exception is
 asynchronous:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> while five_seconds_threads.is_alive():
    ...     pass
 
 And we can notice that we stopped the thread before it stopped by itself:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> time.time() - start_time < 0.5
    True
@@ -460,7 +460,7 @@ Swallowing Timeout exceptions
 
 We check that the fast functions return as outside our context manager:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> with Timeout(5.0) as timeout_ctx:
    ...     result = fast_func()
@@ -479,7 +479,7 @@ line):
 
 We check that slow functions are interrupted:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> start_time = time.time()
    >>> with Timeout(2.0) as timeout_ctx:
@@ -498,7 +498,7 @@ And the context manager is considered as ``False`` since the block did timeout.
 
 Other exceptions are propagated and must be treated as usual:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> try:
    ...     with Timeout(5.0) as timeout_ctx:
@@ -516,7 +516,7 @@ Propagating ``TimeoutException``
 We can choose to propagate the ``TimeoutException`` too. Potential exceptions
 have to be handled:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> result = None
    >>> start_time = time.time()
@@ -534,7 +534,7 @@ have to be handled:
 
 Other exceptions must be handled too:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> result = None
    >>> start_time = time.time()
@@ -559,7 +559,7 @@ certain amount of time.
 You may use a decorated callable without timeout control if you don't provide
 the ``timeout`` optional argument:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> @timeoutable()
    ... def fast_double(value):
@@ -570,7 +570,7 @@ the ``timeout`` optional argument:
 You may specify that timeout with the ``timeout`` optional argument.
 Interrupted callables return None:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> @timeoutable()
    ... def infinite():
@@ -582,7 +582,7 @@ Interrupted callables return None:
 
 Or any other value provided to the ``timeoutable`` decorator parameter:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> @timeoutable('unexpected')
    ... def infinite():
@@ -595,7 +595,7 @@ Or any other value provided to the ``timeoutable`` decorator parameter:
 If the ``timeout`` parameter name may clash with your callable signature, you
 may change it using ``timeout_param``:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> @timeoutable('unexpected', timeout_param='my_timeout')
    ... def infinite():
@@ -607,7 +607,7 @@ may change it using ``timeout_param``:
 
 It works on instance methods too:
 
-.. code-block:: pycon
+.. code:: pycon
 
    >>> class Anything(object):
    ...     @timeoutable('unexpected')
