@@ -1,8 +1,8 @@
 Changes log
 ===========
 
-1.1.1
------
+1.1.1 - 2015-03-22
+------------------
 
 * Fixed bug of timeout context manager as bool under Python 2.x
 * Tested with Python 3.4
