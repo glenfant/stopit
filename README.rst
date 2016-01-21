@@ -184,15 +184,15 @@ A typical usage:
        # ...
 
    # OK, let's check what happened
-   if to_ctx_mrg.state == to_ctx_mrg.EXECUTED:
+   if to_ctx_mgr.state == to_ctx_mgr.EXECUTED:
        # All's fine, everything was executed within 10 seconds
-   elif to_ctx_mrg.state == to_ctx_mrg.EXECUTING:
+   elif to_ctx_mgr.state == to_ctx_mgr.EXECUTING:
        # Hmm, that's not possible outside the block
-   elif to_ctx_mrg.state == to_ctx_mrg.TIMED_OUT:
+   elif to_ctx_mgr.state == to_ctx_mgr.TIMED_OUT:
        # Eeek the 10 seconds timeout occurred while executing the block
-   elif to_ctx_mrg.state == to_ctx_mrg.INTERRUPTED:
+   elif to_ctx_mgr.state == to_ctx_mgr.INTERRUPTED:
        # Oh you raised specifically the TimeoutException in the block
-   elif to_ctx_mrg.state == to_ctx_mrg.CANCELED:
+   elif to_ctx_mgr.state == to_ctx_mgr.CANCELED:
        # Oh you called to_ctx_mgr.cancel() method within the block but it
        # executed till the end
    else:
