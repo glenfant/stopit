@@ -5,7 +5,7 @@ import unittest
 
 from stopit import ThreadingTimeout, threading_timeoutable, SignalTimeout, signal_timeoutable
 
-# We run twice the same doctest with two distinct sets fo globs
+# We run twice the same doctest with two distinct sets of globs
 # This one is for testing signals based timeout control
 signaling_globs = {
     'Timeout': SignalTimeout,
