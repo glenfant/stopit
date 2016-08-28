@@ -379,7 +379,7 @@ Or the POSIX signal based resources:
 
 .. code:: pycon
 
-   >>> from stopit import SignalingTimeout as Timeout, signaling_timeoutable as timeoutable  #doctest: +SKIP
+   >>> from stopit import SignalTimeout as Timeout, signal_timeoutable as timeoutable  #doctest: +SKIP
 
 Let's define some utilities:
 
