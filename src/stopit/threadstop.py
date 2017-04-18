@@ -51,6 +51,7 @@ class ThreadingTimeout(BaseTimeout):
         """
         self.state = BaseTimeout.TIMED_OUT
         async_raise(self.target_tid, TimeoutException)
+        self.__exit__(*sys.exc_info())
 
     # Required overrides
     def setup_interrupt(self):
