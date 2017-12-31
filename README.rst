@@ -327,9 +327,11 @@ Comparing thread based and signal based timeout control
      - Any Python 2.6, 2.7 or 3.3 with ``signal.SIGALRM`` support. This
        excludes Windows boxes
 
+Known issues
+============
 
-Issue about timeout accuracy
-============================
+Timeout accuracy
+----------------
 
 **Important**: the way CPython supports threading and asynchronous features has
 impacts on the accuracy of the timeout. In other words, if you assign a 2.0
@@ -360,6 +362,14 @@ parameter to the context managers and decorators. This parameter will enable
 to lower temporarily the threads switching check interval, having a more
 accurate timeout at the expense of the overall performances while the context
 managed block or decorated functions are executing.
+
+``gevent`` support
+------------------
+
+Threading timeout control as mentioned in `Threading based resources`_ do not work as expected
+when used in the context of a gevent worker.
+
+See the discussion in `Issue #13<https://github.com/glenfant/stopit/issues/13>`_ for more details.
 
 Tests and demos
 ===============
