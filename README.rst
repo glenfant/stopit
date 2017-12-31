@@ -366,7 +366,7 @@ managed block or decorated functions are executing.
 ``gevent`` support
 ------------------
 
-Threading timeout control as mentioned in `Threading based resources`_ do not work as expected
+Threading timeout control as mentioned in `Threading based resources`_ does not work as expected
 when used in the context of a gevent worker.
 
 See the discussion in `Issue 13 <https://github.com/glenfant/stopit/issues/13>`_ for more details.
