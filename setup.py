@@ -47,5 +47,7 @@ setup(name='stopit',
       packages=find_packages('src'),
       package_dir = {'': 'src'},
       test_suite='tests.suite',
+      install_requires=['setuptools'],
+      include_package_data=True,
       zip_safe=False
       )
