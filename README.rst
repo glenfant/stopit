@@ -652,3 +652,8 @@ Credits
 
 - `Gilles Lenfant <gilles.lenfant@gmail.com>`_: package creator and
   maintainer.
+
+License
+=======
+
+This software is open source delivered under the terms of the MIT license. See the ``LICENSE`` file of this repository.

@@ -1,6 +1,12 @@
 Changes log
 ===========
 
+1.1.2 - 2018-02-09
+------------------
+
+* Changed license to MIT
+* Tested with Python 3.5 and 3.6
+
 1.1.1 - 2015-03-22
 ------------------
 
