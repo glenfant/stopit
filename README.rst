@@ -281,7 +281,7 @@ execution exceeds the associated timeout. To turn logging off, just:
 
    import logging
    stopit_logger = logging.getLogger('stopit')
-   stopit_logger.seLevel(logging.ERROR)
+   stopit_logger.setLevel(logging.ERROR)
 
 .. _comparison chart:
 
