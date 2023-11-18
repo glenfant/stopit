@@ -9,9 +9,15 @@ or callables with a context manager or a decorator.
 """
 
 import ctypes
+import sys
 import threading
 
 from .utils import TimeoutException, BaseTimeout, base_timeoutable
+
+if sys.version_info < (3, 7):
+    tid_ctype = ctypes.c_long
+else:
+    tid_ctype = ctypes.c_ulong
 
 
 def async_raise(target_tid, exception):
@@ -24,13 +30,13 @@ def async_raise(target_tid, exception):
     """
     # Ensuring and releasing GIL are useless since we're not in C
     # gil_state = ctypes.pythonapi.PyGILState_Ensure()
-    ret = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(target_tid),
+    ret = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid_ctype(target_tid),
                                                      ctypes.py_object(exception))
     # ctypes.pythonapi.PyGILState_Release(gil_state)
     if ret == 0:
         raise ValueError("Invalid thread ID {}".format(target_tid))
     elif ret > 1:
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(target_tid), None)
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid_ctype(target_tid), None)
         raise SystemError("PyThreadState_SetAsyncExc failed")
 
 
