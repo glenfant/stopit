@@ -78,7 +78,8 @@ class BaseTimeout(object):
             if self.state != BaseTimeout.TIMED_OUT:
                 self.state = BaseTimeout.INTERRUPTED
                 self.suppress_interrupt()
-            LOG.warning("Code block execution exceeded {0} seconds timeout".format(self.seconds),
+            boolean = " not" if self.swallow_exc else ""
+            LOG.warning("Code block execution exceeded {0} seconds timeout and this exception will{1} be raised to client code".format(self.seconds,boolean),
                         exc_info=(exc_type, exc_val, exc_tb))
             return self.swallow_exc
         else:
@@ -131,15 +132,15 @@ class base_timeoutable(object):  # noqa
     """
     to_ctx_mgr = None
 
-    def __init__(self, default=None, timeout_param='timeout'):
-        self.default, self.timeout_param = default, timeout_param
+    def __init__(self, default=None, timeout_param='timeout', swallow_exc=True):
+        self.default, self.timeout_param, self.swallow_exc = default, timeout_param, swallow_exc
 
     def __call__(self, func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             timeout = kwargs.pop(self.timeout_param, None)
             if timeout:
-                with self.to_ctx_mgr(timeout, swallow_exc=True):
+                with self.to_ctx_mgr(timeout, swallow_exc=self.swallow_exc):
                     result = self.default  # noqa
                     # ``result`` may not be assigned below in case of timeout
                     result = func(*args, **kwargs)
